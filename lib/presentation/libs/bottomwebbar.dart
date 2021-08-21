@@ -58,7 +58,14 @@ class BottomWebBar extends StatelessWidget {
               color: Theme.of(context).textTheme.bodyText1!.color,
             ),
           ),
-          PopupMenuButton(
+          IconButton(
+            onPressed: () async => await reloadPage!(),
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).textTheme.bodyText1!.color,
+            ),
+          ),
+          /*PopupMenuButton(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16)
             ),
@@ -162,7 +169,7 @@ class BottomWebBar extends StatelessWidget {
               Icons.more_horiz,
               color: Theme.of(context).textTheme.bodyText1!.color,
             ),
-          ),
+          ),*/
         ],
       ),
     );

@@ -1,6 +1,7 @@
 package com.nk.browserr.web
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
@@ -15,15 +16,29 @@ import android.webkit.*
 import android.webkit.WebView
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Handler
+import android.os.Message
+import android.text.InputType
+import android.util.AttributeSet
 import android.view.*
+import android.view.View.OnTouchListener
+import android.view.inputmethod.BaseInputConnection
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputMethodManager
 import android.webkit.WebViewClient
+import androidx.core.content.ContextCompat
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import java.lang.Exception
+import java.util.concurrent.Executor
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.content.ContextCompat.getSystemService
 
-@SuppressLint("SetJavaScriptEnabled")
-class MyWebView internal constructor(var context: Context, messenger: BinaryMessenger, id: Int) : PlatformView, MethodCallHandler{
-    private val webView: WebView = WebView(context)
+@SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
+class MyWebView internal constructor(context: Context, messenger: BinaryMessenger, id: Int) : PlatformView, MethodCallHandler{
+    private val webView: WebView = WebView(context, null)
     private val methodChannel: MethodChannel
 
     override fun getView(): View {
@@ -39,8 +54,9 @@ class MyWebView internal constructor(var context: Context, messenger: BinaryMess
             loadWithOverviewMode = true
             domStorageEnabled = true
         }
+        webView.isFocusableInTouchMode = true
 
-        methodChannel = MethodChannel(messenger, "my_webview")
+        methodChannel = MethodChannel(messenger, "webview$id")
         methodChannel.setMethodCallHandler(this)
 
         webView.webViewClient = InsideWebViewClient()
@@ -53,10 +69,22 @@ class MyWebView internal constructor(var context: Context, messenger: BinaryMess
                 showChooserDialog()*/
                 return true
             }
+
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 methodChannel.invokeMethod("onProgress", newProgress)
             }
+
+            /*override fun onReceiveIcon(view: WebView?, icon: Bitmap?){
+                methodChannel.invokeMethod("onReceiveIcon", icon)
+            }*/
         }
+
+        /*webView.setOnTouchListener { v, event ->
+            if (event.action == KeyEvent.) {
+                hideSoftKeyboard(v)
+            }
+            false
+        }*/
     }
 
     override fun onMethodCall(methodCall: MethodCall, result: Result) {
@@ -65,6 +93,8 @@ class MyWebView internal constructor(var context: Context, messenger: BinaryMess
             "reloadPage" -> webView.reload()
             "canGoBack" -> canGoBack(result)
             "goBack" -> goBack()
+            "hideKeyboard" -> hideKeyboard()
+            "getTitle" -> getTitle(result)
             "canGoForward" -> canGoForward()
             "isDesktopMode" -> isDesktopMode(methodCall)
             "forceDarkEnabled" -> forceDarkEnabled(methodCall)
@@ -74,6 +104,10 @@ class MyWebView internal constructor(var context: Context, messenger: BinaryMess
 
     private fun canGoBack(result: Result){
         result.success(webView.canGoBack())
+    }
+
+    private fun getTitle(result: Result){
+        result.success(webView.title)
     }
 
     private fun goBack(){
@@ -149,6 +183,11 @@ class MyWebView internal constructor(var context: Context, messenger: BinaryMess
         }
     }
 
+    fun hideKeyboard() {
+        val imm = view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
+        imm!!.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0)
+    }
+
     inner class InsideWebViewClient : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
             if (url.startsWith("intent://instagram.com")) {
@@ -164,6 +203,7 @@ class MyWebView internal constructor(var context: Context, messenger: BinaryMess
 
         override fun onPageFinished(view: WebView?, url: String?) {
             methodChannel.invokeMethod("onFinished", url)
+            //hideSoftKeyboard(view!!)
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest?, error: WebResourceError) {
@@ -171,3 +211,32 @@ class MyWebView internal constructor(var context: Context, messenger: BinaryMess
         }
     }
 }
+
+class WebViewGo(context: Context?, attrs: AttributeSet?) : WebView(context!!, attrs) {
+    override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection {
+        var connection: InputConnection = BaseInputConnection(this, true)
+        outAttrs.imeOptions = EditorInfo.IME_ACTION_DONE
+        if (outAttrs.inputType and InputType.TYPE_CLASS_NUMBER == InputType.TYPE_CLASS_NUMBER) {
+            connection = BaseInputConnection(this, false)
+        } else {
+            outAttrs.inputType = EditorInfo.TYPE_CLASS_TEXT
+        }
+        return connection
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val isDispatched = super.dispatchKeyEvent(event)
+        if (event.action == KeyEvent.ACTION_UP) {
+            //Log.d("anton", "dispatchKeyEvent=" + event.keyCode)
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_ENTER -> {
+                    val imm =
+                        context.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.hideSoftInputFromWindow(windowToken, 0)
+                }
+            }
+        }
+        return isDispatched
+    }
+}
+

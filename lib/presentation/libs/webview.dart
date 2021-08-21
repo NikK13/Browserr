@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,13 +28,7 @@ class WebView extends StatefulWidget {
 }
 
 class WebViewState extends State<WebView> {
-  final controller = WebViewController();
-
-  @override
-  void initState() {
-    controller.channel!.setMethodCallHandler(_handleMessages);
-    super.initState();
-  }
+  WebViewController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -66,19 +61,20 @@ class WebViewState extends State<WebView> {
   }
 
   void _onPlatformViewCreated(int id) {
+    controller = WebViewController(id);
     if (widget.onWebViewCreated == null) {
       return;
     }
-    widget.onWebViewCreated!(controller);
+    widget.onWebViewCreated!(controller!);
+    controller!.channel!.setMethodCallHandler(_handleMessages);
   }
 }
 
 class WebViewController {
   MethodChannel? channel;
-  bool canBack = false;
 
-  WebViewController() {
-    this.channel = MethodChannel('my_webview');
+  WebViewController(id) {
+    this.channel = MethodChannel('webview$id');
   }
 
   Future<void> loadUrl(String url) async {
@@ -89,12 +85,20 @@ class WebViewController {
     return await channel!.invokeMethod('canGoBack');
   }
 
+  Future<String> getTitle() async {
+    return await channel!.invokeMethod('getTitle');
+  }
+
   Future<void> goBack() async {
     return channel!.invokeMethod('goBack');
   }
 
   Future<void> reload() async {
     return channel!.invokeMethod('reloadPage');
+  }
+
+  Future<void> hideKeyboard() async {
+    return channel!.invokeMethod('hideKeyboard');
   }
 
   Future<void> goForward() async {

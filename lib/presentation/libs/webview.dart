@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'package:browserr/presentation/libs/toast.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,27 +8,23 @@ typedef void WebViewCreatedCallback(WebViewController controller);
 typedef void WebViewStarted(String url);
 typedef void WebViewFinished(String url);
 typedef void WebViewProgress(int progress);
+typedef void WebViewContextMenu();
 
-class WebView extends StatefulWidget {
-  const WebView({
+class WebView extends StatelessWidget{
+  WebView({
     Key? key,
     this.onWebViewCreated,
     this.onPageStarted,
     this.onPageFinished,
     this.onProgressChanged,
+    this.onShowContextMenu
   }) : super(key: key);
 
   final WebViewCreatedCallback? onWebViewCreated;
   final WebViewStarted? onPageStarted;
   final WebViewFinished? onPageFinished;
   final WebViewProgress? onProgressChanged;
-
-  @override
-  State<StatefulWidget> createState() => WebViewState();
-}
-
-class WebViewState extends State<WebView> {
-  WebViewController? controller;
+  final WebViewContextMenu? onShowContextMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -42,31 +38,30 @@ class WebViewState extends State<WebView> {
     switch (call.method) {
       case 'onStarted':
         final url = call.arguments;
-        widget.onPageStarted!(url);
+        onPageStarted!(url);
         break;
       case 'onFinished':
         final url = call.arguments;
-        widget.onPageFinished!(url);
+        onPageFinished!(url);
         break;
       case 'onProgress':
         final progress = call.arguments;
-        widget.onProgressChanged!(progress);
+        onProgressChanged!(progress);
         break;
-     /* case 'canGoBack':
-        final canGoBack = call.arguments;
-        //controller.canBack = canGoBack;
-        print(canGoBack);
-        break;*/
+      case 'createContextMenu':
+        final extras = call.arguments as String;
+        onShowContextMenu!();
+        break;
     }
   }
 
-  void _onPlatformViewCreated(int id) {
-    controller = WebViewController(id);
-    if (widget.onWebViewCreated == null) {
+  void _onPlatformViewCreated(int id){
+    final controller = WebViewController(id);
+    if (onWebViewCreated == null) {
       return;
     }
-    widget.onWebViewCreated!(controller!);
-    controller!.channel!.setMethodCallHandler(_handleMessages);
+    onWebViewCreated!(controller);
+    controller.channel!.setMethodCallHandler(_handleMessages);
   }
 }
 
@@ -95,6 +90,14 @@ class WebViewController {
 
   Future<void> reload() async {
     return channel!.invokeMethod('reloadPage');
+  }
+
+  Future<void> downloadImage() async {
+    return channel!.invokeMethod('downloadImage');
+  }
+
+  Future<void> shareImage() async {
+    return channel!.invokeMethod('shareImage');
   }
 
   Future<void> hideKeyboard() async {

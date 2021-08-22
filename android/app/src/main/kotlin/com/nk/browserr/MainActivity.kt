@@ -18,7 +18,7 @@ class MainActivity: FlutterActivity(){
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         GeneratedPluginRegistrant.registerWith(flutterEngine!!)
-        flutterEngine!!.plugins.add(WebViewPlugin())
+        flutterEngine!!.plugins.add(WebViewPlugin(activity))
         flutterEngine!!.plugins.add(RefreshViewPlugin())
         MethodChannel(flutterEngine!!.dartExecutor, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {

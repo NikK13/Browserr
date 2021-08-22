@@ -5,7 +5,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 final table = 'History';
-
 final columnId = 'id';
 final columnUrl = 'url';
 final columnTitle = 'title';

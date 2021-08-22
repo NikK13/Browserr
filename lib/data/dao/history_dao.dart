@@ -54,10 +54,12 @@ class HistoryDao {
   //We are not going to use this in the demo
   Future deleteAllItems() async {
     final db = await dbProvider.database;
+    //final table = 'History';
     var result = await db!.delete(
       table,
     );
-
+    //DELETE FROM SQLITE_SEQUENCE WHERE NAME = '" + TABLE_NAME + "'"
+    await db.rawQuery("DELETE FROM SQLITE_SEQUENCE WHERE NAME = 'History'");
     return result;
   }
 }

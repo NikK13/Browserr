@@ -1,15 +1,22 @@
 import 'package:browserr/domain/utils/app.dart';
 import 'package:browserr/domain/utils/appnavigator.dart';
 import 'package:browserr/domain/utils/custompage.dart';
+import 'package:browserr/domain/utils/localization.dart';
+import 'package:browserr/presentation/bloc/bookmarksbloc.dart';
 import 'package:browserr/presentation/bloc/historybloc.dart';
 import 'package:browserr/presentation/libs/webview.dart';
+import 'package:browserr/presentation/ui/bookmarks.dart';
 import 'package:browserr/presentation/ui/history.dart';
+import 'package:browserr/presentation/ui/settings.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'bottomwebbar.dart';
 
 class SlideMenu extends StatefulWidget {
   final String? initialUrl;
   final HistoryBloc? bloc;
+  final BookmarksBloc? bmBloc;
   final WebViewController? controller;
   final ScrollController? scrollController;
 
@@ -17,6 +24,7 @@ class SlideMenu extends StatefulWidget {
     @required this.scrollController,
     @required this.controller,
     @required this.initialUrl,
+    @required this.bmBloc,
     @required this.bloc,
   });
 
@@ -38,6 +46,7 @@ class _SlideMenuState extends State<SlideMenu> {
 
   @override
   Widget build(BuildContext context) {
+    print("Sheet build call");
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
@@ -50,6 +59,7 @@ class _SlideMenuState extends State<SlideMenu> {
       ),
       child: ListView(
         controller: widget.scrollController,
+        shrinkWrap: true,
         children: [
           SizedBox(height: 16),
           Align(
@@ -65,13 +75,8 @@ class _SlideMenuState extends State<SlideMenu> {
           ),
           SizedBox(height: 8),
           BottomWebBar(
-            goToHistory: () async {
-              await AppNavigator.of(context).push(
-                CustomPage(
-                    child: WebHistory(bloc: widget.bloc)
-                )
-              );
-            },
+            bloc: widget.bmBloc,
+            controller: _controller,
             onBack: () async {
               if (await _controller!.canGoBack()) {
                 _controller!.goBack();
@@ -83,19 +88,7 @@ class _SlideMenuState extends State<SlideMenu> {
             onHomeTap: () async {
               await _controller!.loadUrl(widget.initialUrl!);
             },
-            changeMode: () async {
-              setState(() {
-                isDesktop = !isDesktop;
-              });
-              await _controller!.setDesktopMode(isDesktop);
-            },
             reloadPage: () async => await _controller!.reload(),
-            forceDark: () async {
-              setState(() {
-                isForceDark = !isForceDark;
-              });
-              await _controller!.forceDarkEnabled(isForceDark);
-            },
           ),
           SizedBox(height: 16),
           Padding(
@@ -115,13 +108,13 @@ class _SlideMenuState extends State<SlideMenu> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Force Dark enabled",
+                          MyLocalizations.of(context, 'darkweb'),
                           style: TextStyle(
                               fontSize: 18
                           ),
                         ),
                         Text(
-                          "Works with Android 10+",
+                          MyLocalizations.of(context, 'androidten'),
                           style: TextStyle(
                             fontSize: 12,
                           ),
@@ -163,7 +156,7 @@ class _SlideMenuState extends State<SlideMenu> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Desktop mode enabled",
+                          MyLocalizations.of(context, 'desktopmode'),
                           style: TextStyle(
                               fontSize: 18
                           ),
@@ -190,84 +183,160 @@ class _SlideMenuState extends State<SlideMenu> {
               horizontal: 12,
               vertical: 4,
             ),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: AspectRatio(
-                    aspectRatio: 1.25,
-                    child: Card(
-                      child: InkWell(
-                        onTap: () {
-                          AppNavigator.of(context).push(
-                            CustomPage(
-                              child: WebHistory(
-                                bloc: widget.bloc,
-                                controller: _controller,
-                              )
+                Row(
+                  children: [
+                    ItemsInRow(
+                      icon: Icons.history,
+                      title: MyLocalizations.of(context, 'history'),
+                      countRow: 2,
+                      onTap: (){
+                        AppNavigator.of(context).push(
+                          CustomPage(
+                            child: WebHistory(
+                              bloc: widget.bloc,
+                              controller: _controller,
                             )
-                          );
-                        },
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.history,
-                                size: MediaQuery.of(context).size.width / 10,
-                                color: Theme.of(context).textTheme.bodyText1!.color,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "History",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                ),
-                              ),
-                            ],
                           )
-                        ),
-                      )
+                        );
+                      },
                     ),
-                  )
+                    ItemsInRow(
+                      icon: Icons.bookmark_border_rounded,
+                      title: MyLocalizations.of(context, 'bookmarks'),
+                      countRow: 2,
+                      onTap: (){
+                        AppNavigator.of(context).push(
+                          CustomPage(
+                            child: WebBookmarks(
+                              bloc: widget.bmBloc,
+                              controller: _controller,
+                            )
+                          )
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: AspectRatio(
-                    aspectRatio: 1.25,
-                    child: Card(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.bookmark_outline_rounded,
-                              size: MediaQuery
-                                  .of(context)
-                                  .size
-                                  .width / 10,
-                              color: Theme
-                                  .of(context)
-                                  .textTheme
-                                  .bodyText1!
-                                  .color,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Bookmarks",
-                              style: TextStyle(
-                                fontSize: 20,
-                              ),
-                            ),
-                          ],
-                        )
-                      ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    ItemsInRow(
+                      icon: Icons.search,
+                      title: MyLocalizations.of(context, 'findpage'),
+                      countRow: 2,
+                      onTap: (){
+
+                      },
                     ),
-                  )
+                    ItemsInRow(
+                      icon: Icons.vpn_lock_rounded,
+                      title: MyLocalizations.of(context, 'incognito'),
+                      countRow: 2,
+                      onTap: (){
+
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    ItemsInRow(
+                      icon: Icons.code,
+                      title: MyLocalizations.of(context, 'sourcecode'),
+                      countRow: 3,
+                      onTap: () async{
+                        final prefs = await SharedPreferences.getInstance();
+                        await _controller!.viewSourceCode(prefs.getString("lastURL")!);
+                      },
+                    ),
+                    ItemsInRow(
+                      icon: Icons.settings,
+                      title: MyLocalizations.of(context, 'settings'),
+                      countRow: 3,
+                      onTap: (){
+                        AppNavigator.of(context).push(
+                          CustomPage(
+                            child: SettingsPage()
+                          )
+                        );
+                      },
+                    ),
+                    ItemsInRow(
+                      icon: Icons.share,
+                      title: MyLocalizations.of(context, 'shareurl'),
+                      countRow: 3,
+                      onTap: () async{
+                        final prefs = await SharedPreferences.getInstance();
+                        await _controller!.shareUrl(prefs.getString("lastURL")!);
+                      },
+                    ),
+                  ],
                 ),
               ],
-            ),
+            )
           )
         ],
       ),
     );
   }
 }
+
+class ItemsInRow extends StatelessWidget {
+  final int? countRow;
+  final IconData? icon;
+  final String? title;
+  final Function? onTap;
+
+  const ItemsInRow({
+    this.icon,
+    this.title,
+    this.onTap,
+    this.countRow,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: AspectRatio(
+        aspectRatio: 1.2,
+        child: Card(
+          child: InkWell(
+            onTap: () => onTap!(),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: MediaQuery
+                        .of(context)
+                        .size
+                        .width / 10,
+                    color: Theme
+                        .of(context)
+                        .textTheme
+                        .bodyText1!
+                        .color,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    title!,
+                    style: TextStyle(
+                      fontSize: countRow == 3 ? 16 : 20,
+                    ),
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              )
+            ),
+          )
+        ),
+      )
+    );
+  }
+}
+

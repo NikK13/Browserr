@@ -1,4 +1,5 @@
 import 'package:browserr/domain/model/history.dart';
+import 'package:browserr/domain/utils/localization.dart';
 import 'package:browserr/presentation/bloc/historybloc.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +34,7 @@ class WebHistory extends StatelessWidget {
                     )
                   ),
                   Text(
-                    "History",
+                    MyLocalizations.of(context, 'history'),
                     style: TextStyle(
                       fontSize: 26,
                     ),
@@ -53,7 +54,7 @@ class WebHistory extends StatelessWidget {
             StreamBuilder(
               stream: bloc!.listStream,
               builder: (context, AsyncSnapshot snapshot){
-                print(snapshot.connectionState);
+                //print(snapshot.connectionState);
                 if(snapshot.connectionState == ConnectionState.active){
                   if(snapshot.data != null){
                     final history = snapshot.data as List<History>;
@@ -123,7 +124,7 @@ class HistoryItem extends StatelessWidget{
         children: [
           if(index == 0)
             Text(
-              "  Today",
+              "  ${MyLocalizations.of(context, 'today')}",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold
@@ -141,50 +142,70 @@ class HistoryItem extends StatelessWidget{
             child: Container(
               width: double.infinity,
               child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  child: InkWell(
-                    onTap: (){
-                      Navigator.of(context).pop();
-                      controller!.loadUrl(history!.url!);
-                    },
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                history!.title!,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                ),
-                                maxLines: 1,
-                              ),
-                              Text(
-                                history!.url!,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                ),
-                                maxLines: 1,
-                              ),
-                            ],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: InkWell(
+                  onTap: (){
+                    Navigator.of(context).pop();
+                    controller!.loadUrl(history!.url!);
+                  },
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: history!.image == null
+                          ?
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(30)
+                            ),
+                            width: 50,
+                            height: 50,
+                          )
+                          :
+                          Image.memory(
+                            history!.image!,
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.fitWidth,
                           ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              history!.title!,
+                              style: TextStyle(
+                                fontSize: 20,
+                              ),
+                              maxLines: 1,
+                            ),
+                            Text(
+                              history!.url!,
+                              style: TextStyle(
+                                fontSize: 10,
+                              ),
+                              maxLines: 1,
+                            ),
+                          ],
                         ),
-                        IconButton(
-                          onPressed: () async{
-                            await bloc!.deleteItemByID(history!.id!);
-                          },
-                          icon: Icon(
-                            Icons.clear,
-                            color: Theme.of(context).textTheme.bodyText1!.color,
-                          ),
-                        )
-                      ],
-                    ),
-                  )
+                      ),
+                      IconButton(
+                        onPressed: () async{
+                          await bloc!.deleteItemByID(history!.id!);
+                        },
+                        icon: Icon(
+                          Icons.clear,
+                          color: Theme.of(context).textTheme.bodyText1!.color,
+                        ),
+                      )
+                    ],
+                  ),
+                )
               ),
             )
           ),

@@ -1,23 +1,21 @@
 import 'dart:typed_data';
 
-class History{
+class Bookmark{
   final int? id;
   final String? title;
   final String? url;
   final int? timestamp;
   final Uint8List? image;
 
-  const History({
+  const Bookmark({
     this.id,
     this.title,
     this.url,
-    this.timestamp,
     this.image,
+    this.timestamp,
   });
 
   Map<String, dynamic> toJson() => {
-    //This will be used to convert Todo objects that
-    //are to be stored into the datbase in a form of JSON
     "id": this.id,
     "title": this.title,
     "date": this.timestamp,
@@ -25,8 +23,8 @@ class History{
     "image": this.image,
   };
 
-  factory History.fromJson(Map<String, dynamic> json) {
-    return History(
+  factory Bookmark.fromJson(Map<String, dynamic> json) {
+    return Bookmark(
       id: json['id'] as int?,
       title: json['title'] as String?,
       url: json['url'] as String?,
@@ -35,7 +33,7 @@ class History{
     );
   }
 
-  /*static Map<String, dynamic> toMap(Place place) => {
+/*static Map<String, dynamic> toMap(Place place) => {
     'id': place.id,
     'name': place.name,
     'latitude': place.lat,

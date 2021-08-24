@@ -1,12 +1,14 @@
+import 'dart:typed_data';
 import 'dart:ui';
-
 import 'package:browserr/domain/model/history.dart';
 import 'package:browserr/domain/model/preferences.dart';
 import 'package:browserr/domain/utils/app.dart';
 import 'package:browserr/domain/utils/appnavigator.dart';
+import 'package:browserr/presentation/bloc/bookmarksbloc.dart';
 import 'package:browserr/presentation/bloc/historybloc.dart';
 import 'package:browserr/presentation/libs/slidemenu.dart';
 import 'package:browserr/presentation/libs/toast.dart';
+import 'package:browserr/presentation/libs/webimgdialog.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:browserr/presentation/provider/preferenceprovider.dart';
 import 'package:flutter/cupertino.dart';
@@ -82,24 +84,17 @@ class WebViewPage extends StatefulWidget {
 class _WebViewPageState extends State<WebViewPage> {
   WebViewController? _controller;
   SharedPreferences? prefs;
-
-  String _url = "";
-  int _progress = 0;
+  SlideMenu? slideMenu;
 
   final initialUrl = 'https://www.google.com';
   final historyBloc = HistoryBloc();
+  final bookmarksBloc = BookmarksBloc();
 
-  String? prevUrl;
-  String? curUrl;
-  bool isExpanded = false;
-
-  late double minSize;
   late double initSize;
 
   @override
   Widget build(BuildContext context) {
     final isLight = MediaQuery.of(context).platformBrightness == Brightness.light;
-    minSize = (MediaQuery.of(context).size.height / 1000) * ((MediaQuery.of(context).size.height / 1000) * 0.09);
     initSize = (MediaQuery.of(context).size.height / 1000) * ((MediaQuery.of(context).size.height / 1000) * 0.185);
     App.setupBar(isLight);
     return Scaffold(
@@ -125,17 +120,23 @@ class _WebViewPageState extends State<WebViewPage> {
                   const SizedBox(height: 8),
                   InkWell(
                     onTap: () {
-                      Toast(
-                        _url.contains("https")
-                            ?
-                        "Connection is secured"
-                            :
-                        "Connection is not secured"
-                      );
+                      if(_controller != null){
+                        Toast(
+                          _controller!.url.contains("https")
+                              ?
+                          "Connection is secured"
+                              :
+                          "Connection is not secured"
+                        );
+                      }
                     },
                     child: Icon(
                       Icons.lock,
-                      color: _url.contains("https") ? Colors.green : Colors.grey,
+                      color: _controller != null ?
+                      (_controller!.url.contains("https") ?
+                      Colors.green :
+                      Colors.grey) :
+                      Colors.grey,
                       size: 16,
                     ),
                   ),
@@ -145,11 +146,14 @@ class _WebViewPageState extends State<WebViewPage> {
                     ),
                     child: InkWell(
                       onLongPress: () {
-                        Clipboard.setData(ClipboardData(text: _url));
-                        Toast("URL copied to clipboard");
+                        if(_controller != null){
+                          final url = _controller!.url;
+                          Clipboard.setData(ClipboardData(text: url));
+                          Toast("URL copied to clipboard");
+                        }
                       },
                       child: Text(
-                        _url,
+                        _controller == null ? "" : _controller!.url,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold
@@ -161,130 +165,87 @@ class _WebViewPageState extends State<WebViewPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if(_progress > 0 && _progress < 100)
-                    LinearProgressIndicator(
-                      value: _progress.toDouble() / 100,
-                      //backgroundColor: Colors.red,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        App.appColor,
-                      ),
+                  if((_controller != null) && (_controller!.progress > 0 && _controller!.progress < 100))
+                  LinearProgressIndicator(
+                    value: _controller!.progress.toDouble() / 100,
+                    //backgroundColor: Colors.red,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      App.appColor,
                     ),
+                  ),
                   Expanded(
-                    child: WebView(
-                      onWebViewCreated: (controller) async {
-                        prefs = await SharedPreferences.getInstance();
-                        setState(() => _controller = controller);
-                        if (prefs!.getString("lastURL") == null) {
-                          _controller!.loadUrl(initialUrl);
-                          await prefs!.setString("lastURL", initialUrl);
-                        }
-                        else {
-                          final lastURL = prefs!.getString("lastURL");
-                          _controller!.loadUrl(lastURL!);
-                        }
-                      },
-                      onShowContextMenu: (){
-                        showDialog(
-                          context: context,
-                          builder: (ctx){
-                            return BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Dialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                                child: Material(
-                                  type: MaterialType.transparency,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        "Menu preferences",
-                                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
-                                      ),
-                                      const SizedBox(height: 20),
-                                      ListTile(
-                                        leading: Icon(
-                                          Icons.image,
-                                          color: Theme.of(context).textTheme.bodyText1!.color,
-                                        ),
-                                        title: Text(
-                                          "Download image",
-                                          style: const TextStyle(fontWeight: FontWeight.w500),
-                                        ),
-                                        onTap: () async {
-                                          await _controller!.downloadImage();
-                                          Navigator.pop(ctx);
-                                        },
-                                      ),
-                                      ListTile(
-                                        leading: Icon(
-                                          Icons.share,
-                                          color: Theme.of(context).textTheme.bodyText1!.color,
-                                        ),
-                                        title: Text(
-                                          "Share image",
-                                          style: const TextStyle(fontWeight: FontWeight.w500),
-                                        ),
-                                        onTap: () async {
-                                          await _controller!.shareImage();
-                                          Navigator.pop(ctx);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        bottom: initSize * 188
+                      ),
+                      child: WebView(
+                        onWebViewCreated: (controller) async {
+                          prefs = await SharedPreferences.getInstance();
+                          setState(() => _controller = controller);
+                          if (prefs!.getString("lastURL") == null) {
+                            _controller!.loadUrl(initialUrl);
+                            await prefs!.setString("lastURL", initialUrl);
                           }
-                        );
-                      },
-                      onPageStarted: (String url) {
-                        setState(() => _url = url);
-                      },
-                      onProgressChanged: (int progress) {
-                        setState(() => _progress = progress);
-                      },
-                      onPageFinished: (String url) async {
-                        final title = await _controller!.getTitle();
-                        SystemChannels.textInput.invokeMethod('TextInput.hide');
-                        setState(() {
-                          _url = url;
-                          prevUrl = curUrl;
-                          curUrl = url;
-                        });
-                        await prefs!.setString("lastURL", url);
-                        if (prevUrl != curUrl) {
-                          //FocusManager.instance.primaryFocus!.unfocus();
-                          //SystemChannels.textInput.invokeMethod('TextInput.hide');
-                          //FocusScope.of(context).unfocus();
-                          await historyBloc.addItem(
-                            History(
-                              title: title,
-                              url: url,
-                              timestamp: DateTime.now().millisecondsSinceEpoch
-                            )
+                          else {
+                            final lastURL = prefs!.getString("lastURL");
+                            _controller!.loadUrl(lastURL!);
+                          }
+                        },
+                        onShowContextMenu: (){
+                          showDialog(
+                            context: context,
+                            builder: (ctx){
+                              return ImagesDialog(
+                                controller: _controller,
+                              );
+                            }
                           );
-                        }
-                      },
-                    ),
+                        },
+                        onPageStarted: (String url) {
+                          setState(() => _controller!.url = url);
+                        },
+                        onProgressChanged: (int progress) {
+                          setState(() => _controller!.progress = progress);
+                        },
+                        onIconReceived: (Uint8List image, String url) async {
+                          final title = await _controller!.getTitle();
+                          _controller!.image = image;
+                          await historyBloc.addItem(
+                              History(
+                                title: title,
+                                url: url,
+                                timestamp: DateTime.now().millisecondsSinceEpoch,
+                                image: image,
+                              )
+                          );
+                        },
+                        onPageFinished: (String url) async {
+                          SystemChannels.textInput.invokeMethod('TextInput.hide');
+                          setState(() => _controller!.url = url);
+                          await prefs!.setString("lastURL", url);
+                          await bookmarksBloc.initialize(url);
+                        },
+                      ),
+                    )
                   ),
                 ],
               ),
               if(_controller != null)
               DraggableScrollableSheet(
-                minChildSize: minSize,
+                minChildSize: initSize,
                 initialChildSize: initSize,
                 maxChildSize: 0.675,
                 builder: (ctx, controller) {
-                  return SlideMenu(
-                    bloc: historyBloc,
-                    controller: _controller,
-                    scrollController: controller,
-                    initialUrl: initialUrl,
-                  );
+                  if(slideMenu == null){
+                    slideMenu = SlideMenu(
+                      bloc: historyBloc,
+                      bmBloc: bookmarksBloc,
+                      controller: _controller,
+                      scrollController: controller,
+                      initialUrl: initialUrl,
+                    );
+                  }
+                  return slideMenu!;
                 },
               ),
             ],

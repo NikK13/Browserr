@@ -1,28 +1,31 @@
+import 'package:browserr/domain/model/bookmark.dart';
+import 'package:browserr/presentation/bloc/bookmarksbloc.dart';
+import 'package:browserr/presentation/libs/webview.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BottomWebBar extends StatelessWidget {
   final Function? onBack;
-  final Function? goToHistory;
   final Function? onForward;
   final Function? onHomeTap;
-  final Function? changeMode;
   final Function? reloadPage;
-  final Function? forceDark;
+  final BookmarksBloc? bloc;
+  final WebViewController? controller;
 
   const BottomWebBar({
     this.onBack,
     this.onForward,
     this.onHomeTap,
-    this.changeMode,
     this.reloadPage,
-    this.forceDark,
-    this.goToHistory,
+    this.controller,
+    this.bloc,
   });
 
   @override
   Widget build(BuildContext context) {
     final height = MediaQuery.of(context).size.height / 15;
+    print("BottomBar build call");
     return Container(
       height: height,
       child: Row(
@@ -42,14 +45,42 @@ class BottomWebBar extends StatelessWidget {
               color: Theme.of(context).textTheme.bodyText1!.color,
             ),
           ),
-          IconButton(
-            onPressed: (){
-
+          StreamBuilder(
+            stream: bloc!.isLikedStream,
+            builder: (context, AsyncSnapshot<bool> snapshot){
+              final notNull = snapshot.data != null;
+              bool isLiked = notNull ? snapshot.data! : false;
+              //print(isLiked);
+              return IconButton(
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await bloc!.changeLikedTo(
+                    isLiked ? false : true,
+                  );
+                  isLiked
+                  ?
+                  await bloc!.deleteItem(prefs.getString("lastURL")!)
+                  :
+                  await bloc!.addItem(
+                    Bookmark(
+                      title: await controller!.getTitle(),
+                      url: prefs.getString("lastURL")!,
+                      timestamp: DateTime.now().millisecondsSinceEpoch,
+                      image: controller!.image,
+                    )
+                  );
+                  //await bloc.getPlaces();
+                },
+                icon: Icon(
+                  notNull
+                  ?
+                  (isLiked ? Icons.favorite : Icons.favorite_outline)
+                  :
+                  Icons.favorite_outline,
+                  color: Theme.of(context).textTheme.bodyText1!.color,
+                ),
+              );
             },
-            icon: Icon(
-              Icons.add_to_photos_outlined,
-              color: Theme.of(context).textTheme.bodyText1!.color,
-            ),
           ),
           IconButton(
             onPressed: () async => await onForward!(),

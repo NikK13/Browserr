@@ -27,14 +27,13 @@ import android.content.Context.DOWNLOAD_SERVICE
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Environment
+import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.File
 import androidx.core.content.ContextCompat.startActivity
-
-
-
+import java.io.ByteArrayOutputStream
 
 
 @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
@@ -45,9 +44,13 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
     private var mFilePathCallback: ValueCallback<Array<Uri?>?>? = null
     private val pickFileRequestId = 0
 
+    private var isResource: String? = null
+
     override fun getView(): View {
         return webView
     }
+
+    private var fakeAgent = "Mozilla/5.0 (Linux; Android 4.1.1; Galaxy Nexus Build/JRO03C) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/92.0.4515.131 Mobile Safari/535.19"
 
     init {
         activity.registerForContextMenu(this.webView)
@@ -58,6 +61,7 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
             javaScriptEnabled = true
             loadWithOverviewMode = true
             domStorageEnabled = true
+            userAgentString = fakeAgent
         }
         webView.isFocusableInTouchMode = true
         methodChannel.setMethodCallHandler(this)
@@ -80,6 +84,20 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
             }
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 methodChannel.invokeMethod("onProgress", newProgress)
+            }
+            override fun onReceivedIcon(view: WebView?, icon: Bitmap?) {
+                super.onReceivedIcon(view, icon)
+                if(isResource == null && view!!.progress == 100){
+                    val stream = ByteArrayOutputStream()
+                    icon!!.compress(Bitmap.CompressFormat.PNG, 60, stream)
+                    val hashMap = mapOf(
+                        "image" to stream.toByteArray(),
+                        "url" to view.url as Any,
+                    )
+                    isResource = view.url
+                    methodChannel.invokeMethod("onIconReceived", hashMap)
+                }
+                //icon.recycle()
             }
         }
     }
@@ -107,9 +125,11 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
     override fun onMethodCall(methodCall: MethodCall, result: Result) {
         when (methodCall.method) {
             "loadUrl" -> loadUrl(methodCall, result)
+            "shareUrl" -> shareCurrentUrl(methodCall)
             "reloadPage" -> webView.reload()
             "canGoBack" -> canGoBack(result)
             "goBack" -> goBack()
+            "viewSource" -> viewSourceCode(methodCall)
             "downloadImage" -> downloadImage()
             "shareImage" -> shareImage(activity)
             "getTitle" -> getTitle(result)
@@ -140,6 +160,11 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
         result.success(null)
     }
 
+    private fun viewSourceCode(methodCall: MethodCall) {
+        val url = methodCall.arguments as String
+        webView.loadUrl("view-source:$url")
+    }
+
     private fun forceDarkEnabled(methodCall: MethodCall) {
         val isEnabled = methodCall.arguments as Boolean
         if(WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
@@ -159,7 +184,7 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
                 e.printStackTrace()
             }
         } else {
-            newUserAgent = null
+            newUserAgent = fakeAgent
         }
         webView.settings.apply {
             userAgentString = newUserAgent
@@ -178,43 +203,56 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
     override fun dispose() {}
 
     fun launchInsta(view: WebView, name: String) {
-        val uriForApp: Uri = Uri.parse("http://instagram.com/_u/$name")
+        /*val uriForApp: Uri = Uri.parse("http://instagram.com/_u/$name")
         val forApp = Intent(Intent.ACTION_VIEW, uriForApp)
-        forApp.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        forApp.flags = Intent.FLAG_ACTIVITY_NEW_TASK*/
 
         val uriForBrowser: Uri = Uri.parse("http://instagram.com/$name")
         val forBrowser = Intent(Intent.ACTION_VIEW, uriForBrowser)
         forBrowser.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        try {
+            view.context.startActivity(forBrowser)
+        }
+        catch (e: ActivityNotFoundException){
+            Log.d("myLog", e.message!!)
+        }
 
-        forApp.component =
+        /*forApp.component =
             ComponentName(
                 "com.instagram.android",
                 "com.instagram.android.activity.UrlHandlerActivity"
-            )
+            )*/
 
-        try {
+
+        /*try {
             view.context.startActivity(forApp)
         } catch (e: ActivityNotFoundException) {
+            Log.d("myLog", e.message!!)
             view.context.startActivity(forBrowser)
-        }
+        }*/
     }
 
     inner class InsideWebViewClient : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
             if (url.startsWith("intent://instagram.com")) {
-                launchInsta(view, "instagram")
+                launchInsta(view, url.substring(26).substringBefore("?"))
             }
-            else view.loadUrl(url)
-            return true
+            return false
         }
 
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-            methodChannel.invokeMethod("onStarted", url)
+            isResource = null
+            if (url!!.startsWith("https://www.instagram.com")) {
+                launchInsta(view!!, url.substring(26).substringBefore("?"))
+            }
+            else methodChannel.invokeMethod("onStarted", url)
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
+            if(url!!.contains("intent")){
+                if(view!!.canGoBack()) view.goBack()
+            }
             methodChannel.invokeMethod("onFinished", url)
-            //hideSoftKeyboard(view!!)
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest?, error: WebResourceError) {
@@ -236,6 +274,22 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
             }
         }
         else Toast.makeText(webView.context, "Error, try again..", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun shareCurrentUrl(methodCall: MethodCall){
+        val url = methodCall.arguments as String
+        val intent = Intent(Intent.ACTION_SEND)
+        intent.type = "*/*"
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        intent.putExtra(Intent.EXTRA_TEXT, url)
+        val chooser = Intent.createChooser(intent, "Share url")
+        val resInfoList: List<ResolveInfo> = view.context.packageManager.queryIntentActivities(chooser, PackageManager.MATCH_DEFAULT_ONLY)
+
+        for (resolveInfo in resInfoList) {
+            val packageName: String = resolveInfo.activityInfo.packageName
+            view.context.grantUriPermission(packageName, null, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        activity.startActivity(chooser)
     }
 
     @SuppressLint("QueryPermissionsNeeded")

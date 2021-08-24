@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:browserr/presentation/libs/toast.dart';
+import 'dart:collection';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ typedef void WebViewCreatedCallback(WebViewController controller);
 typedef void WebViewStarted(String url);
 typedef void WebViewFinished(String url);
 typedef void WebViewProgress(int progress);
+typedef void WebViewFavicon(Uint8List imageBytes, String url);
 typedef void WebViewContextMenu();
 
 class WebView extends StatelessWidget{
@@ -17,13 +19,15 @@ class WebView extends StatelessWidget{
     this.onPageStarted,
     this.onPageFinished,
     this.onProgressChanged,
-    this.onShowContextMenu
+    this.onShowContextMenu,
+    this.onIconReceived,
   }) : super(key: key);
 
   final WebViewCreatedCallback? onWebViewCreated;
   final WebViewStarted? onPageStarted;
   final WebViewFinished? onPageFinished;
   final WebViewProgress? onProgressChanged;
+  final WebViewFavicon? onIconReceived;
   final WebViewContextMenu? onShowContextMenu;
 
   @override
@@ -49,8 +53,11 @@ class WebView extends StatelessWidget{
         onProgressChanged!(progress);
         break;
       case 'createContextMenu':
-        final extras = call.arguments as String;
         onShowContextMenu!();
+        break;
+      case 'onIconReceived':
+        final args = call.arguments as Map;
+        onIconReceived!(args['image'] as Uint8List, args['url'] as String);
         break;
     }
   }
@@ -68,12 +75,24 @@ class WebView extends StatelessWidget{
 class WebViewController {
   MethodChannel? channel;
 
+  String url = "";
+  int progress = 0;
+  Uint8List? image;
+
   WebViewController(id) {
     this.channel = MethodChannel('webview$id');
   }
 
   Future<void> loadUrl(String url) async {
     return channel!.invokeMethod('loadUrl', url);
+  }
+
+  Future<void> shareUrl(String url) async {
+    return await channel!.invokeMethod('shareUrl', url);
+  }
+
+  Future<void> viewSourceCode(String url) async {
+    return await channel!.invokeMethod('viewSource', url);
   }
 
   Future<bool> canGoBack() async {

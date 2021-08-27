@@ -39,15 +39,19 @@ class WebHistory extends StatelessWidget {
                       fontSize: 26,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () async{
-                      await bloc!.deleteAllItems();
-                    },
-                    icon: Icon(
-                      Icons.delete_forever_outlined,
-                      color: Theme.of(context).textTheme.bodyText1!.color,
-                    )
-                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () async{
+                          await bloc!.deleteAllItems();
+                        },
+                        icon: Icon(
+                          Icons.delete_forever_outlined,
+                          color: Theme.of(context).textTheme.bodyText1!.color,
+                        )
+                      ),
+                    ],
+                  )
                 ],
               ),
             ),
@@ -122,14 +126,14 @@ class HistoryItem extends StatelessWidget{
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if(index == 0)
+         /* if(index == 0)
             Text(
               "  ${MyLocalizations.of(context, 'today')}",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold
               ),
-            ),
+            ),*/
           if(isShowing!)
             Text(
               "  ${DateFormat('MMMM dd, yyyy').format(DateTime.fromMillisecondsSinceEpoch(history!.timestamp!))}",
@@ -159,11 +163,26 @@ class HistoryItem extends StatelessWidget{
                           ?
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(30)
+                              gradient: LinearGradient(
+                                begin: Alignment.topRight,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.red,
+                                  Colors.blue,
+                                ]
+                              ),
+                              borderRadius: BorderRadius.circular(8)
                             ),
-                            width: 50,
-                            height: 50,
+                            width: 28,
+                            height: 28,
+                            child: Center(
+                              child: Text(
+                                history!.title![0],
+                                style: TextStyle(
+                                  fontSize: 20,
+                                ),
+                              ),
+                            )
                           )
                           :
                           Image.memory(
@@ -180,7 +199,7 @@ class HistoryItem extends StatelessWidget{
                             Text(
                               history!.title!,
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 17,
                               ),
                               maxLines: 1,
                             ),

@@ -3,7 +3,6 @@ import 'package:browserr/domain/utils/localization.dart';
 import 'package:browserr/presentation/bloc/bookmarksbloc.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class WebBookmarks extends StatelessWidget {
   final BookmarksBloc? bloc;
@@ -126,11 +125,26 @@ class BookmarksItem extends StatelessWidget{
                         ?
                         Container(
                           decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(30)
+                            gradient: LinearGradient(
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.red,
+                                Colors.blue,
+                              ]
+                            ),
+                            borderRadius: BorderRadius.circular(8)
                           ),
-                          width: 50,
-                          height: 50,
+                          width: 28,
+                          height: 28,
+                          child: Center(
+                            child: Text(
+                              bookmark!.title![0],
+                              style: TextStyle(
+                                fontSize: 20,
+                              ),
+                            ),
+                          )
                         )
                         :
                         Image.memory(

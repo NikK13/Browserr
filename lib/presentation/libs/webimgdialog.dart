@@ -38,8 +38,8 @@ class ImagesDialog extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 onTap: () async {
-                  await controller!.downloadImage();
                   Navigator.pop(context);
+                  await controller!.downloadImage();
                 },
               ),
               ListTile(
@@ -52,8 +52,8 @@ class ImagesDialog extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 onTap: () async {
-                  await controller!.shareImage();
                   Navigator.pop(context);
+                  await controller!.shareImage();
                 },
               ),
             ],

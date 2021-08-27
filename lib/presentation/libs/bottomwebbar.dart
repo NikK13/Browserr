@@ -12,6 +12,7 @@ class BottomWebBar extends StatelessWidget {
   final Function? reloadPage;
   final BookmarksBloc? bloc;
   final WebViewController? controller;
+  final bool? isIncognito;
 
   const BottomWebBar({
     this.onBack,
@@ -19,6 +20,7 @@ class BottomWebBar extends StatelessWidget {
     this.onHomeTap,
     this.reloadPage,
     this.controller,
+    this.isIncognito,
     this.bloc,
   });
 
@@ -45,6 +47,8 @@ class BottomWebBar extends StatelessWidget {
               color: Theme.of(context).textTheme.bodyText1!.color,
             ),
           ),
+          !isIncognito!
+          ?
           StreamBuilder(
             stream: bloc!.isLikedStream,
             builder: (context, AsyncSnapshot<bool> snapshot){
@@ -58,29 +62,40 @@ class BottomWebBar extends StatelessWidget {
                     isLiked ? false : true,
                   );
                   isLiked
-                  ?
+                      ?
                   await bloc!.deleteItem(prefs.getString("lastURL")!)
-                  :
+                      :
                   await bloc!.addItem(
-                    Bookmark(
-                      title: await controller!.getTitle(),
-                      url: prefs.getString("lastURL")!,
-                      timestamp: DateTime.now().millisecondsSinceEpoch,
-                      image: controller!.image,
-                    )
+                      Bookmark(
+                        title: await controller!.getTitle(),
+                        url: prefs.getString("lastURL")!,
+                        timestamp: DateTime.now().millisecondsSinceEpoch,
+                        image: controller!.image,
+                      )
                   );
                   //await bloc.getPlaces();
                 },
                 icon: Icon(
                   notNull
-                  ?
+                      ?
                   (isLiked ? Icons.favorite : Icons.favorite_outline)
-                  :
+                      :
                   Icons.favorite_outline,
                   color: Theme.of(context).textTheme.bodyText1!.color,
                 ),
               );
             },
+          )
+          :
+          IconButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              controller!.isIncognitoMode(false);
+            },
+            icon: Icon(
+              Icons.close,
+              color: Theme.of(context).textTheme.bodyText1!.color,
+            ),
           ),
           IconButton(
             onPressed: () async => await onForward!(),

@@ -1,15 +1,11 @@
 import 'dart:async';
 import 'package:browserr/data/repository/repository.dart';
 import 'package:browserr/domain/model/bookmark.dart';
+import 'package:browserr/domain/utils/bloc.dart';
 import 'package:rxdart/rxdart.dart';
 
-class BookmarksBloc {
-  //Get instance of the Repository
+class BookmarksBloc implements Bloc{
   final repository = Repository();
-  //Stream controller is the 'Admin' that manages
-  //the state of our stream of data like adding
-  //new data, change the state of the stream
-  //and broadcast it to observers/subscribers
 
   final _liked = BehaviorSubject<bool>();
   final _items = BehaviorSubject<List<Bookmark>>();
@@ -64,7 +60,8 @@ class BookmarksBloc {
     await getAllItems();
   }
 
-  dispose() {
+  @override
+  void dispose() {
     _items.close();
     _liked.close();
   }

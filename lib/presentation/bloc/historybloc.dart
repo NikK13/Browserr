@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:browserr/data/repository/repository.dart';
 import 'package:browserr/domain/model/history.dart';
+import 'package:browserr/domain/utils/bloc.dart';
 import 'package:rxdart/rxdart.dart';
 
-class HistoryBloc {
+class HistoryBloc implements Bloc{
   //Get instance of the Repository
   final repository = Repository();
   //Stream controller is the 'Admin' that manages
@@ -42,6 +43,7 @@ class HistoryBloc {
     await getAllItems();
   }
 
+  @override
   dispose() {
     _items.close();
   }

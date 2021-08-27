@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 class App {
-  static const String appName = "MeetDate";
-  static const appColor = Color(0xFFFBC02D);
+  static const appColor = Color(0xFFFDC222);
+  //static const appColor = Color(0xFF673AB7);
   static const Color colorDark = const Color(0xFF212121);
   static const Color colorLight = const Color(0xFFFFFF);
-  static Color test = Colors.yellow;
+  static Color test = Colors.deepPurple;
   static const String font = "SourceSans";
 
   static final Iterable<LocalizationsDelegate<dynamic>> delegates = [
@@ -42,15 +42,15 @@ class App {
   );
 
   static final buttonStyle = ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-          primary: App.appColor,
-          textStyle: TextStyle(
-            fontFamily: App.font,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          )
+    style: ElevatedButton.styleFrom(
+      primary: App.appColor,
+      textStyle: TextStyle(
+        fontFamily: App.font,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       )
+    )
   );
 
   static final cupertinoTheme = CupertinoThemeData(

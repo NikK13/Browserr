@@ -1,12 +1,17 @@
+import 'dart:ui';
 import 'package:browserr/domain/utils/app.dart';
 import 'package:browserr/domain/utils/appnavigator.dart';
 import 'package:browserr/domain/utils/custompage.dart';
 import 'package:browserr/domain/utils/localization.dart';
+import 'package:browserr/presentation/bloc/bloc_provider.dart';
 import 'package:browserr/presentation/bloc/bookmarksbloc.dart';
+import 'package:browserr/presentation/bloc/cachebloc.dart';
 import 'package:browserr/presentation/bloc/historybloc.dart';
+import 'package:browserr/presentation/libs/searchdialog.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:browserr/presentation/ui/bookmarks.dart';
 import 'package:browserr/presentation/ui/history.dart';
+import 'package:browserr/presentation/ui/incognito.dart';
 import 'package:browserr/presentation/ui/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +20,7 @@ import 'bottomwebbar.dart';
 
 class SlideMenu extends StatefulWidget {
   final String? initialUrl;
+  final int? androidV;
   final HistoryBloc? bloc;
   final BookmarksBloc? bmBloc;
   final WebViewController? controller;
@@ -23,6 +29,7 @@ class SlideMenu extends StatefulWidget {
   const SlideMenu({
     @required this.scrollController,
     @required this.controller,
+    @required this.androidV,
     @required this.initialUrl,
     @required this.bmBloc,
     @required this.bloc,
@@ -34,6 +41,7 @@ class SlideMenu extends StatefulWidget {
 
 class _SlideMenuState extends State<SlideMenu> {
   late WebViewController? _controller;
+  final cacheBloc = CacheBloc();
 
   bool isDesktop = false;
   bool isForceDark = false;
@@ -61,7 +69,7 @@ class _SlideMenuState extends State<SlideMenu> {
         controller: widget.scrollController,
         shrinkWrap: true,
         children: [
-          SizedBox(height: 16),
+          /*SizedBox(height: 16),
           Align(
             child: Container(
               decoration: BoxDecoration(
@@ -72,11 +80,12 @@ class _SlideMenuState extends State<SlideMenu> {
               height: 4,
             ),
             alignment: Alignment.center,
-          ),
+          ),*/
           SizedBox(height: 8),
           BottomWebBar(
             bloc: widget.bmBloc,
             controller: _controller,
+            isIncognito: false,
             onBack: () async {
               if (await _controller!.canGoBack()) {
                 _controller!.goBack();
@@ -91,6 +100,7 @@ class _SlideMenuState extends State<SlideMenu> {
             reloadPage: () async => await _controller!.reload(),
           ),
           SizedBox(height: 16),
+          if(widget.androidV! >= 29 && widget.androidV != null)
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 12,
@@ -110,15 +120,9 @@ class _SlideMenuState extends State<SlideMenu> {
                         Text(
                           MyLocalizations.of(context, 'darkweb'),
                           style: TextStyle(
-                              fontSize: 18
+                            fontSize: 18
                           ),
                         ),
-                        Text(
-                          MyLocalizations.of(context, 'androidten'),
-                          style: TextStyle(
-                            fontSize: 12,
-                          ),
-                        )
                       ],
                     ),
                     Switch(
@@ -227,7 +231,23 @@ class _SlideMenuState extends State<SlideMenu> {
                       title: MyLocalizations.of(context, 'findpage'),
                       countRow: 2,
                       onTap: (){
-
+                        showDialog(
+                          context: context,
+                          builder: (context){
+                            return BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Dialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                                child: SearchPopup(
+                                  controller: _controller,
+                                ),
+                              ),
+                            );
+                          }
+                        );
                       },
                     ),
                     ItemsInRow(
@@ -235,7 +255,9 @@ class _SlideMenuState extends State<SlideMenu> {
                       title: MyLocalizations.of(context, 'incognito'),
                       countRow: 2,
                       onTap: (){
-
+                        AppNavigator.of(context).push(
+                          CustomPage(child: IncognitoPage())
+                        );
                       },
                     ),
                   ],
@@ -252,17 +274,26 @@ class _SlideMenuState extends State<SlideMenu> {
                         await _controller!.viewSourceCode(prefs.getString("lastURL")!);
                       },
                     ),
-                    ItemsInRow(
-                      icon: Icons.settings,
-                      title: MyLocalizations.of(context, 'settings'),
-                      countRow: 3,
-                      onTap: (){
-                        AppNavigator.of(context).push(
-                          CustomPage(
-                            child: SettingsPage()
-                          )
-                        );
-                      },
+                    BlocProvider<CacheBloc>(
+                      bloc: cacheBloc,
+                      child: ItemsInRow(
+                        icon: Icons.settings,
+                        title: MyLocalizations.of(context, 'settings'),
+                        countRow: 3,
+                        onTap: () async{
+                          final bytes = await _controller!.getCacheSize();
+                          await cacheBloc.refreshCache(bytes);
+                          AppNavigator.of(context).push(
+                            CustomPage(
+                              child: SettingsPage(
+                                cacheBloc: cacheBloc,
+                                controller: _controller,
+                                bytesOfCache: bytes,
+                              )
+                            )
+                          );
+                        },
+                      ),
                     ),
                     ItemsInRow(
                       icon: Icons.share,

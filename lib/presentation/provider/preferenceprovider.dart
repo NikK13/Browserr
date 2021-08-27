@@ -8,7 +8,9 @@ class PreferenceProvider extends ChangeNotifier {
   SharedPreferences?_sp;
 
   String? currentTheme;
+  String? initialURL;
   Locale? locale;
+  bool? isFirst;
 
   PreferenceProvider() {
     _loadFromPrefs();
@@ -21,6 +23,8 @@ class PreferenceProvider extends ChangeNotifier {
   _loadFromPrefs() async {
     await _initPrefs();
     if (_sp!.getString('mode') == null) await _sp!.setString('mode', 'system');
+    if (_sp!.getBool('first') == null) await _sp!.setBool('first', true);
+    if (_sp!.getString('initialURL') == null) await _sp!.setString('initialURL', 'https://www.google.com');
     if (_sp!.getString('language') == null) {
       switch (window.locale.languageCode) {
         case 'en':
@@ -36,25 +40,35 @@ class PreferenceProvider extends ChangeNotifier {
       locale = Locale(_sp!.getString('language')!, '');
     }
     currentTheme = _sp!.getString('mode');
+    initialURL = _sp!.getString('initialURL');
+    isFirst = _sp!.getBool('first');
     notifyListeners();
   }
 
   savePreference(String key, value) async {
     await _initPrefs();
     switch (key) {
+      case 'initialURL':
       case 'language':
       case 'mode':
         _sp!.setString(key, value);
         break;
+      case 'first':
+        _sp!.setBool(key, value);
+        break;
     }
     locale = Locale(_sp!.getString('language')!, '');
+    initialURL = _sp!.getString('initialURL');
     currentTheme = _sp!.getString('mode');
+    isFirst = _sp!.getBool('first');
     notifyListeners();
   }
 
   Preferences get preferences => Preferences(
     locale: locale,
     currentTheme: currentTheme,
+    initialURL: initialURL,
+    isFirst: isFirst,
   );
 
   String getThemeTitle(BuildContext context) {

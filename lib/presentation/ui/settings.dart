@@ -1,83 +1,147 @@
 import 'dart:ui';
-
 import 'package:browserr/domain/utils/app.dart';
 import 'package:browserr/domain/utils/localization.dart';
+import 'package:browserr/presentation/bloc/cachebloc.dart';
 import 'package:browserr/presentation/libs/settings_row.dart';
+import 'package:browserr/presentation/libs/webview.dart';
 import 'package:browserr/presentation/provider/preferenceprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage();
+class SettingsPage extends StatelessWidget{
+  final WebViewController? controller;
+  final CacheBloc? cacheBloc;
+  final int? bytesOfCache;
+
+  const SettingsPage({
+    this.controller,
+    this.cacheBloc,
+    this.bytesOfCache,
+  });
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PreferenceProvider>(context);
     App.setupBar(Theme.of(context).brightness == Brightness.light);
+    print("Settings rebuild");
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      onPressed: (){
-                        Navigator.pop(context);
-                      },
-                      icon: Icon(
-                        Icons.arrow_back,
-                        color: Theme.of(context).textTheme.bodyText1!.color,
-                      )
-                    ),
-                    Text(
-                      MyLocalizations.of(context, 'settings'),
-                      style: TextStyle(
-                        fontSize: 26,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                          onPressed: (){
+                            Navigator.pop(context);
+                          },
+                          icon: Icon(
+                            Icons.arrow_back,
+                            color: Theme.of(context).textTheme.bodyText1!.color,
+                          )
                       ),
-                    ),
-                    const SizedBox(
-                      width: 50,
-                    )
-                  ],
+                      Text(
+                        MyLocalizations.of(context, 'settings'),
+                        style: TextStyle(
+                          fontSize: 26,
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 50,
+                      )
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              SettingsTitle(
-                title: MyLocalizations.of(context, 'common'),
-              ),
-              SettingsRow(
-                title: MyLocalizations.of(context, 'changelang'),
-                onTap: () => showLangDialog(context, provider),
-                trailing: getTitle(context),
-                icon: Icons.language_rounded,
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 24),
-                  SettingsTitle(
-                    title: MyLocalizations.of(context, 'appearance'),
-                  ),
-                  SettingsRow(
-                    title: MyLocalizations.of(context, 'currenttheme'),
-                    onTap: () => showThemesDialog(context, provider),
-                    trailing: provider.getThemeTitle(context),
-                    icon: Icons.brightness_auto,
-                  ),
-                ],
-              )
-            ],
+                const SizedBox(height: 8),
+                SettingsTitle(
+                  title: MyLocalizations.of(context, 'common'),
+                ),
+                SettingsRow(
+                  title: MyLocalizations.of(context, 'changelang'),
+                  onTap: () => showLangDialog(context, provider),
+                  trailing: getTitle(context),
+                  icon: Icons.language_rounded,
+                ),
+                SettingsRow(
+                  title: MyLocalizations.of(context, 'about'),
+                  onTap: (){
+                    showAboutDialog(
+                      context: context,
+                      applicationName: 'BrowseR',
+                      applicationVersion: '1.0.0',
+                      applicationLegalese: '©2021 NK',
+                    );
+                  },
+                  trailing: MyLocalizations.of(context, 'about'),
+                  icon: Icons.info_outline_rounded,
+                ),
+                const SizedBox(height: 24),
+                SettingsTitle(
+                  title: MyLocalizations.of(context, 'appearance'),
+                ),
+                SettingsRow(
+                  title: MyLocalizations.of(context, 'currenttheme'),
+                  onTap: () => showThemesDialog(context, provider),
+                  trailing: provider.getThemeTitle(context),
+                  icon: Icons.brightness_auto,
+                ),
+                const SizedBox(height: 24),
+                SettingsTitle(
+                  title: MyLocalizations.of(context, 'webprefs'),
+                ),
+                StreamBuilder(
+                  stream: cacheBloc!.cacheStream,
+                  builder: (context, AsyncSnapshot<int> snapshot){
+                    int bytes = snapshot.data ?? 0;
+                    print("Stream re-run $bytes");
+                    return SettingsRow(
+                      title: MyLocalizations.of(context, 'cache'),
+                      onTap: () async {
+                        await cacheBloc!.clearCache(controller!);
+                        //await cacheBloc!.refreshCache(await controller!.getCacheSize());
+                      },
+                      trailing: bytesIntoFormat(bytes),
+                      icon: Icons.analytics_outlined,
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      )
+        )
     );
+  }
+
+  String bytesIntoFormat(int bytes) {
+    int kilobyte = 1024;
+    int megabyte = kilobyte * 1024;
+    int gigabyte = megabyte * 1024;
+    int terabyte = gigabyte * 1024;
+
+    if ((bytes >= 0) && (bytes < kilobyte)) {
+      return "${bytes.toStringAsFixed(2)} B";
+
+    } else if ((bytes >= kilobyte) && (bytes < megabyte)) {
+      return  "${(bytes / kilobyte).toStringAsFixed(2)} KB";
+
+    } else if ((bytes >= megabyte) && (bytes < gigabyte)) {
+      return  "${(bytes / megabyte).toStringAsFixed(2)} MB";
+
+    } else if ((bytes >= gigabyte) && (bytes < terabyte)) {
+      return  "${(bytes / gigabyte).toStringAsFixed(2)} GB";
+
+    } else if (bytes >= terabyte) {
+      return  "${(bytes / terabyte).toStringAsFixed(2)} TB";
+
+    } else {
+      return  "${bytes.toStringAsFixed(2)} Bytes";
+    }
   }
 
   String getTitle(BuildContext context) {

@@ -31,6 +31,13 @@ class MyLocalizations {
       'themes': "Available themes",
       'langs': "Available languages",
       'today': "Today",
+      'getstarted': "Launch now",
+      'title': "BrowseR",
+      'desc': "Scrollable bottom menu with a lot of features",
+      'webprefs': "Web settings",
+      'cache': "Browser cache",
+      'clear': "Clear",
+      'about': "About application"
     },
     'ru': {
       'history': "История",
@@ -53,6 +60,13 @@ class MyLocalizations {
       'themes': "Доступные темы",
       'langs': "Доступные языки",
       'today': "Сегодня",
+      'getstarted': "Начать",
+      'title': "BrowseR",
+      'desc': "Выдвижное нижнее меню с многими функциями",
+      'webprefs': "Веб настройки",
+      'cache': "Кэш браузера",
+      'clear': "Очистить",
+      'about': "О приложении"
     },
     'be': {
       'history': "Гісторыя",
@@ -76,6 +90,13 @@ class MyLocalizations {
       'themes': "Даступныя тэмы",
       'langs': "Даступныя мовы",
       'today': "Сёння",
+      'getstarted': "Пачаць",
+      'title': "BrowseR",
+      'desc': "Высоўнае ніжняе меню з многімі функцыямі",
+      'webprefs': "Веб налады",
+      'cache': "Кэш браўзэра",
+      'clear': "Ачысціць",
+      'about': "Аб прыладзе"
     }
   };
 

@@ -37,7 +37,7 @@ class SettingsRow extends StatelessWidget {
                   Icon(
                     icon!,
                     size: 36,
-                    color: Theme.of(context).textTheme.bodyText1!.color,
+                    color: App.appColor,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -55,7 +55,7 @@ class SettingsRow extends StatelessWidget {
                           trailing!,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(context).textTheme.bodyText1!.color
+                            color: App.appColor
                           ),
                           maxLines: 1,
                         ),
@@ -105,7 +105,7 @@ class SettingsTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical:2),
       child: Container(
         child: Text(
           title!,
@@ -113,7 +113,7 @@ class SettingsTitle extends StatelessWidget {
             fontFamily: App.font,
             fontWeight: FontWeight.w700,
             color: Theme.of(context).textTheme.bodyText1!.color,
-            fontSize: 12,
+            fontSize: 14,
           ),
         ),
       ),

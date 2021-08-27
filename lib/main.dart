@@ -4,6 +4,8 @@ import 'package:browserr/domain/model/history.dart';
 import 'package:browserr/domain/model/preferences.dart';
 import 'package:browserr/domain/utils/app.dart';
 import 'package:browserr/domain/utils/appnavigator.dart';
+import 'package:browserr/domain/utils/custompage.dart';
+import 'package:browserr/domain/utils/localization.dart';
 import 'package:browserr/presentation/bloc/bookmarksbloc.dart';
 import 'package:browserr/presentation/bloc/historybloc.dart';
 import 'package:browserr/presentation/libs/slidemenu.dart';
@@ -11,6 +13,7 @@ import 'package:browserr/presentation/libs/toast.dart';
 import 'package:browserr/presentation/libs/webimgdialog.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:browserr/presentation/provider/preferenceprovider.dart';
+import 'package:browserr/presentation/ui/browser.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,7 +62,11 @@ class MyApp extends StatelessWidget {
               return AppNavigator(
                 navigatorKey: _navigatorKey,
                 initialPages: [
-                  MaterialPage(child: WebViewPage(prefs: provider.preferences))
+                  provider.isFirst!
+                  ?
+                  MaterialPage(child: WelcomePage(prefs: provider.preferences))
+                  :
+                  MaterialPage(child: BrowserPage(prefs: provider.preferences))
                 ],
                 observers: [_heroController],
               );
@@ -72,184 +79,110 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class WebViewPage extends StatefulWidget {
+
+class WelcomePage extends StatelessWidget {
   final Preferences? prefs;
 
-  const WebViewPage({this.prefs});
+  WelcomePage({this.prefs});
 
-  @override
-  _WebViewPageState createState() => _WebViewPageState();
-}
-
-class _WebViewPageState extends State<WebViewPage> {
-  WebViewController? _controller;
-  SharedPreferences? prefs;
-  SlideMenu? slideMenu;
-
-  final initialUrl = 'https://www.google.com';
-  final historyBloc = HistoryBloc();
-  final bookmarksBloc = BookmarksBloc();
-
-  late double initSize;
+  proceedToApp(context, provider) async {
+    await provider.savePreference('language', prefs!.locale!.languageCode);
+    await provider.savePreference('first', false);
+    Navigator.pop(context);
+    AppNavigator.of(context).push(
+      CustomPage(child: BrowserPage(prefs: prefs))
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<PreferenceProvider>(context);
     final isLight = MediaQuery.of(context).platformBrightness == Brightness.light;
-    initSize = (MediaQuery.of(context).size.height / 1000) * ((MediaQuery.of(context).size.height / 1000) * 0.185);
     App.setupBar(isLight);
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: WillPopScope(
-          onWillPop: () async {
-            if (_controller != null) {
-              if (await _controller!.canGoBack()) {
-                _controller!.goBack();
-                return Future.value(false);
-              }
-              else
-                return Future.value(true);
-            }
-            else
-              return Future.value(false);
-          },
-          child: Stack(
-            children: [
-              Column(
+      body: Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const SizedBox(
+              height: 24,
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                ),
+                child: Center(
+                  child: Image(
+                    width: MediaQuery.of(context).size.width / 0.88,
+                    height : MediaQuery.of(context).size.width / 0.88,
+                    image: AssetImage('assets/illustration.jpg')
+                  ),
+                ),
+              )
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 32,
+                horizontal: 32
+              ),
+              child: Column(
                 children: [
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () {
-                      if(_controller != null){
-                        Toast(
-                          _controller!.url.contains("https")
-                              ?
-                          "Connection is secured"
-                              :
-                          "Connection is not secured"
-                        );
-                      }
-                    },
-                    child: Icon(
-                      Icons.lock,
-                      color: _controller != null ?
-                      (_controller!.url.contains("https") ?
-                      Colors.green :
-                      Colors.grey) :
-                      Colors.grey,
-                      size: 16,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16
-                    ),
-                    child: InkWell(
-                      onLongPress: () {
-                        if(_controller != null){
-                          final url = _controller!.url;
-                          Clipboard.setData(ClipboardData(text: url));
-                          Toast("URL copied to clipboard");
-                        }
-                      },
-                      child: Text(
-                        _controller == null ? "" : _controller!.url,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold
-                        ),
-                        maxLines: 1,
-                        textAlign: TextAlign.center,
-                        //overflow: TextOverflow.ellipsis,
+                  FittedBox(
+                    fit: BoxFit.cover,
+                    child: Text(
+                      MyLocalizations.of(context, 'title'),
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  if((_controller != null) && (_controller!.progress > 0 && _controller!.progress < 100))
-                  LinearProgressIndicator(
-                    value: _controller!.progress.toDouble() / 100,
-                    //backgroundColor: Colors.red,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      App.appColor,
+                  const SizedBox(
+                    height: 8,
+                  ),
+                  FittedBox(
+                    fit: BoxFit.cover,
+                    child: Text(
+                      MyLocalizations.of(context, 'desc'),
+                      style: TextStyle(
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        bottom: initSize * 188
-                      ),
-                      child: WebView(
-                        onWebViewCreated: (controller) async {
-                          prefs = await SharedPreferences.getInstance();
-                          setState(() => _controller = controller);
-                          if (prefs!.getString("lastURL") == null) {
-                            _controller!.loadUrl(initialUrl);
-                            await prefs!.setString("lastURL", initialUrl);
-                          }
-                          else {
-                            final lastURL = prefs!.getString("lastURL");
-                            _controller!.loadUrl(lastURL!);
-                          }
-                        },
-                        onShowContextMenu: (){
-                          showDialog(
-                            context: context,
-                            builder: (ctx){
-                              return ImagesDialog(
-                                controller: _controller,
-                              );
-                            }
-                          );
-                        },
-                        onPageStarted: (String url) {
-                          setState(() => _controller!.url = url);
-                        },
-                        onProgressChanged: (int progress) {
-                          setState(() => _controller!.progress = progress);
-                        },
-                        onIconReceived: (Uint8List image, String url) async {
-                          final title = await _controller!.getTitle();
-                          _controller!.image = image;
-                          await historyBloc.addItem(
-                              History(
-                                title: title,
-                                url: url,
-                                timestamp: DateTime.now().millisecondsSinceEpoch,
-                                image: image,
-                              )
-                          );
-                        },
-                        onPageFinished: (String url) async {
-                          SystemChannels.textInput.invokeMethod('TextInput.hide');
-                          setState(() => _controller!.url = url);
-                          await prefs!.setString("lastURL", url);
-                          await bookmarksBloc.initialize(url);
-                        },
-                      ),
-                    )
-                  ),
+                  )
                 ],
+              )
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                bottom: 48,
+                top: 8
               ),
-              if(_controller != null)
-              DraggableScrollableSheet(
-                minChildSize: initSize,
-                initialChildSize: initSize,
-                maxChildSize: 0.675,
-                builder: (ctx, controller) {
-                  if(slideMenu == null){
-                    slideMenu = SlideMenu(
-                      bloc: historyBloc,
-                      bmBloc: bookmarksBloc,
-                      controller: _controller,
-                      scrollController: controller,
-                      initialUrl: initialUrl,
-                    );
-                  }
-                  return slideMenu!;
+              child: ElevatedButton(
+                onPressed: () async {
+                  await proceedToApp(context, provider);
                 },
-              ),
-            ],
-          )
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  child: Container(
+                    child: Text(
+                      MyLocalizations.of(context, 'getstarted'),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.normal,
+                        //color: Theme.of(context).accentColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                ),
+              )
+            )
+          ],
         ),
       ),
     );

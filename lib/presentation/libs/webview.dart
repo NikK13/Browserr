@@ -10,17 +10,20 @@ typedef void WebViewStarted(String url);
 typedef void WebViewFinished(String url);
 typedef void WebViewProgress(int progress);
 typedef void WebViewFavicon(Uint8List imageBytes, String url);
+typedef void WebViewTitle(String url);
 typedef void WebViewContextMenu();
 
 class WebView extends StatelessWidget{
   WebView({
     Key? key,
+    this.isWebIncognito,
     this.onWebViewCreated,
     this.onPageStarted,
     this.onPageFinished,
     this.onProgressChanged,
     this.onShowContextMenu,
     this.onIconReceived,
+    this.onTitleReceived,
   }) : super(key: key);
 
   final WebViewCreatedCallback? onWebViewCreated;
@@ -28,7 +31,9 @@ class WebView extends StatelessWidget{
   final WebViewFinished? onPageFinished;
   final WebViewProgress? onProgressChanged;
   final WebViewFavicon? onIconReceived;
+  final WebViewTitle? onTitleReceived;
   final WebViewContextMenu? onShowContextMenu;
+  final bool? isWebIncognito;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +64,10 @@ class WebView extends StatelessWidget{
         final args = call.arguments as Map;
         onIconReceived!(args['image'] as Uint8List, args['url'] as String);
         break;
+      case 'onTitleReceived':
+        final title = call.arguments as String;
+        onTitleReceived!(title);
+        break;
     }
   }
 
@@ -68,7 +77,9 @@ class WebView extends StatelessWidget{
       return;
     }
     onWebViewCreated!(controller);
+    controller.isIncognito = isWebIncognito;
     controller.channel!.setMethodCallHandler(_handleMessages);
+    controller.isIncognitoMode(isWebIncognito!);
   }
 }
 
@@ -78,6 +89,7 @@ class WebViewController {
   String url = "";
   int progress = 0;
   Uint8List? image;
+  bool? isIncognito;
 
   WebViewController(id) {
     this.channel = MethodChannel('webview$id');
@@ -85,6 +97,14 @@ class WebViewController {
 
   Future<void> loadUrl(String url) async {
     return channel!.invokeMethod('loadUrl', url);
+  }
+
+  Future<void> findOnPage(String text) async {
+    return channel!.invokeMethod('findOnPage', text);
+  }
+
+  Future<void> isIncognitoMode(bool isIncognito) async {
+    return channel!.invokeMethod('isIncognito', isIncognito);
   }
 
   Future<void> shareUrl(String url) async {
@@ -95,12 +115,32 @@ class WebViewController {
     return await channel!.invokeMethod('viewSource', url);
   }
 
+  Future<void> clearCache() async {
+    channel!.invokeMethod('clearCache');
+  }
+
   Future<bool> canGoBack() async {
     return await channel!.invokeMethod('canGoBack');
   }
 
+  Future<bool> isWebHitOfImage() async {
+    return await channel!.invokeMethod('isHitForImage');
+  }
+
+  Future<String?> intentExtra() async {
+    return await channel!.invokeMethod('intentFromOtherApp');
+  }
+
   Future<String> getTitle() async {
     return await channel!.invokeMethod('getTitle');
+  }
+
+  Future<int> getAndroidVersion() async {
+    return await channel!.invokeMethod('getAndroidVersion');
+  }
+
+  Future<int> getCacheSize() async {
+    return await channel!.invokeMethod('getCache');
   }
 
   Future<void> goBack() async {

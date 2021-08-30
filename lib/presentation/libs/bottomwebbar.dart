@@ -1,5 +1,5 @@
 import 'package:browserr/domain/model/bookmark.dart';
-import 'package:browserr/presentation/bloc/bookmarksbloc.dart';
+import 'package:browserr/presentation/bloc/bookmarks_bloc.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +27,7 @@ class BottomWebBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final height = MediaQuery.of(context).size.height / 15;
-    print("BottomBar build call");
+    print("BottomBar build call: $isIncognito");
     return Container(
       height: height,
       child: Row(
@@ -66,12 +66,12 @@ class BottomWebBar extends StatelessWidget {
                   await bloc!.deleteItem(prefs.getString("lastURL")!)
                       :
                   await bloc!.addItem(
-                      Bookmark(
-                        title: await controller!.getTitle(),
-                        url: prefs.getString("lastURL")!,
-                        timestamp: DateTime.now().millisecondsSinceEpoch,
-                        image: controller!.image,
-                      )
+                    Bookmark(
+                      title: await controller!.getTitle(),
+                      url: prefs.getString("lastURL")!,
+                      timestamp: DateTime.now().millisecondsSinceEpoch,
+                      image: controller!.img,
+                    )
                   );
                   //await bloc.getPlaces();
                 },
@@ -89,8 +89,8 @@ class BottomWebBar extends StatelessWidget {
           :
           IconButton(
             onPressed: () async {
-              Navigator.pop(context);
               controller!.isIncognitoMode(false);
+              Navigator.pop(context);
             },
             icon: Icon(
               Icons.close,
@@ -111,111 +111,6 @@ class BottomWebBar extends StatelessWidget {
               color: Theme.of(context).textTheme.bodyText1!.color,
             ),
           ),
-          /*PopupMenuButton(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)
-            ),
-            onSelected: (int index) async{
-              switch(index){
-                case 1:
-                  await goToHistory!();
-                  break;
-                case 3:
-                  await changeMode!();
-                  break;
-                case 4:
-                  await reloadPage!();
-                  break;
-                case 5:
-                  await forceDark!();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.history,
-                      color: Theme.of(context).textTheme.bodyText1!.color,
-                    ),
-                    const SizedBox(width: 8),
-                    Text("History"),
-                  ],
-                ),
-                value: 1,
-              ),
-              PopupMenuItem(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.bookmark_outline,
-                      color: Theme.of(context).textTheme.bodyText1!.color,
-                    ),
-                    const SizedBox(width: 8),
-                    Text("Bookmarks"),
-                  ],
-                ),
-                value: 2,
-              ),
-              PopupMenuItem(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.desktop_windows_outlined,
-                      color: Theme.of(context).textTheme.bodyText1!.color,
-                    ),
-                    const SizedBox(width: 8),
-                    Text("Change web mode"),
-                  ],
-                ),
-                value: 3,
-              ),
-              PopupMenuItem(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.refresh,
-                      color: Theme.of(context).textTheme.bodyText1!.color,
-                    ),
-                    const SizedBox(width: 8),
-                    Text("Reload page"),
-                  ],
-                ),
-                value: 4,
-              ),
-              PopupMenuItem(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.dark_mode,
-                      color: Theme.of(context).textTheme.bodyText1!.color,
-                    ),
-                    const SizedBox(width: 8),
-                    Text("Force Dark Mode"),
-                  ],
-                ),
-                value: 5,
-              ),
-              PopupMenuItem(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.settings,
-                      color: Theme.of(context).textTheme.bodyText1!.color,
-                    ),
-                    const SizedBox(width: 8),
-                    Text("Settings"),
-                  ],
-                ),
-                value: 6,
-              )
-            ],
-            icon: Icon(
-              Icons.more_horiz,
-              color: Theme.of(context).textTheme.bodyText1!.color,
-            ),
-          ),*/
         ],
       ),
     );

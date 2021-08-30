@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -43,7 +42,7 @@ class WebView extends StatelessWidget{
     );
   }
 
-  Future<Null> _handleMessages(MethodCall call) async {
+  Future _handleMessages(MethodCall call) async {
     switch (call.method) {
       case 'onStarted':
         final url = call.arguments;
@@ -73,11 +72,8 @@ class WebView extends StatelessWidget{
 
   void _onPlatformViewCreated(int id){
     final controller = WebViewController(id);
-    if (onWebViewCreated == null) {
-      return;
-    }
+    if (onWebViewCreated == null) return;
     onWebViewCreated!(controller);
-    controller.isIncognito = isWebIncognito;
     controller.channel!.setMethodCallHandler(_handleMessages);
     controller.isIncognitoMode(isWebIncognito!);
   }
@@ -85,11 +81,9 @@ class WebView extends StatelessWidget{
 
 class WebViewController {
   MethodChannel? channel;
+  Uint8List? img;
 
-  String url = "";
-  int progress = 0;
-  Uint8List? image;
-  bool? isIncognito;
+  setImage(image) => img = image;
 
   WebViewController(id) {
     this.channel = MethodChannel('webview$id');

@@ -1,18 +1,18 @@
 import 'package:browserr/domain/utils/localization.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-class SearchPopup extends StatefulWidget {
+class UrlPopup extends StatefulWidget {
   final WebViewController? controller;
+  final String? url;
 
-  SearchPopup({this.controller});
+  UrlPopup({this.controller, this.url});
 
   @override
-  _SearchPopupState createState() => _SearchPopupState();
+  _UrlPopupState createState() => _UrlPopupState();
 }
 
-class _SearchPopupState extends State<SearchPopup>{
+class _UrlPopupState extends State<UrlPopup>{
   static final _key = GlobalKey<FormState>();
   final TextEditingController _controller = TextEditingController();
 
@@ -20,6 +20,12 @@ class _SearchPopupState extends State<SearchPopup>{
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    _controller.text = widget.url!;
+    super.initState();
   }
 
   @override
@@ -46,6 +52,14 @@ class _SearchPopupState extends State<SearchPopup>{
               style: TextStyle(fontSize: 18.0),
               controller: _controller,
               key: _key,
+              onSubmitted: (text) async {
+                final url = _controller.text.trim();
+                if(url.isNotEmpty){
+                  Navigator.pop(context);
+                  await widget.controller!.loadUrl(url);
+                }
+                else Navigator.pop(context);
+              },
               decoration: InputDecoration(
                 hintText: MyLocalizations.of(context, 'search'),
               ),
@@ -53,28 +67,21 @@ class _SearchPopupState extends State<SearchPopup>{
             const SizedBox(
               height: 16.0,
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () async {
+            Container(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final url = _controller.text.trim();
+                  if(url.isNotEmpty){
                     Navigator.pop(context);
-                    await widget.controller!.findOnPage(_controller.text.trim());
-                  },
-                  child: Text(
-                    MyLocalizations.of(context, 'search')
-                  )
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    await widget.controller!.findOnPage("");
-                  },
-                  child: Text(
-                    MyLocalizations.of(context, 'finish')
-                  )
+                    await widget.controller!.loadUrl(url);
+                  }
+                  else Navigator.pop(context);
+                },
+                child: Text(
+                    "Search all"
                 )
-              ],
+              ),
             )
           ],
         ),

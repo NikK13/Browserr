@@ -1,9 +1,8 @@
-import 'package:browserr/presentation/libs/webview.dart';
 import 'package:flutter/material.dart';
 
 class UrlInfoPopup extends StatelessWidget {
 
-  final WebViewController? controller;
+  final String? url;
 
   final titleNotProtected = "Your connection to this website is not protected";
   final descNotProtected = "You should not enter sensitive data on this site (e.g. passwords or credit cards) because they could be intercepted by malicious users.";
@@ -11,7 +10,7 @@ class UrlInfoPopup extends StatelessWidget {
   final titleIsProtected = "Your connection is protected";
   final descIsProtected = "Your sensitive data (e.g. passwords or credit card numbers) remains private when it is sent to this site.";
 
-  UrlInfoPopup({this.controller});
+  UrlInfoPopup({this.url});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +26,7 @@ class UrlInfoPopup extends StatelessWidget {
             ),
             Icon(
               Icons.lock,
-              color: controller!.url.contains("https") ?
+              color: url!.contains("https") ?
               Colors.green :
               Colors.grey,
               size: 16,
@@ -35,7 +34,7 @@ class UrlInfoPopup extends StatelessWidget {
             Container(
               padding: EdgeInsets.only(bottom: 10.0),
               child: Text(
-                controller!.url.contains("https") ? titleIsProtected : titleNotProtected,
+                url!.contains("https") ? titleIsProtected : titleNotProtected,
                 style: TextStyle(
                   fontSize: 16.0,
                   fontWeight: FontWeight.bold
@@ -45,7 +44,7 @@ class UrlInfoPopup extends StatelessWidget {
             ),
             Container(
               child: Text(
-                controller!.url.contains("https")
+                url!.contains("https")
                 ? descIsProtected
                 : descNotProtected,
                 style: TextStyle(fontSize: 14),

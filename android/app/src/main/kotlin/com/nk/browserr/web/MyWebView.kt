@@ -42,7 +42,6 @@ import java.io.ByteArrayOutputStream
 class MyWebView internal constructor(context: Context, messenger: BinaryMessenger, id: Int, private val activity: Activity) : PlatformView, MethodCallHandler{
     private val methodChannel = MethodChannel(messenger, "webview$id")
     private val webView: WebView = InputAwareWebView(context, null, true, methodChannel)
-    private val swController = ServiceWorkerController.getInstance()
 
     private var mFilePathCallback: ValueCallback<Array<Uri?>?>? = null
     private val pickFileRequestId = 0
@@ -63,17 +62,11 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
             loadWithOverviewMode = true
             domStorageEnabled = true
             userAgentString = mobileAgent
-            setMediaPlaybackRequiresUserGesture(false)
+            mediaPlaybackRequiresUserGesture = false
         }
-        WebView.setWebContentsDebuggingEnabled(true);
-        webView.isFocusableInTouchMode = true
+        /*WebView.setWebContentsDebuggingEnabled(true);
+        webView.isFocusableInTouchMode = true*/
         methodChannel.setMethodCallHandler(this)
-        swController.setServiceWorkerClient(object : ServiceWorkerClient() {
-            override fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
-                //Log.d("myLog", "in service worker. isMainFrame:" + request.isForMainFrame.toString() + ": " + request.url)
-                return null
-            }
-        })
 
         webView.webViewClient = InsideWebViewClient()
         webView.setDownloadListener { url, _, contentDisposition, mimetype, _ ->
@@ -209,8 +202,6 @@ class MyWebView internal constructor(context: Context, messenger: BinaryMessenge
         val isIncognito = methodCall.arguments as Boolean
         CookieManager.getInstance().setAcceptCookie(!isIncognito);
         //CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
-        swController.serviceWorkerWebSettings.cacheMode = if(isIncognito) WebSettings.LOAD_NO_CACHE else WebSettings.LOAD_DEFAULT
-        swController.serviceWorkerWebSettings.allowContentAccess = !isIncognito
         webView.apply {
             settings.cacheMode = if(isIncognito) WebSettings.LOAD_NO_CACHE else WebSettings.LOAD_DEFAULT
             settings.allowContentAccess = !isIncognito

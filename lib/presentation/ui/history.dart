@@ -1,6 +1,7 @@
 import 'package:browserr/domain/model/history.dart';
 import 'package:browserr/domain/utils/localization.dart';
-import 'package:browserr/presentation/bloc/historybloc.dart';
+import 'package:browserr/presentation/bloc/history_bloc.dart';
+import 'package:browserr/presentation/bloc/web_bloc.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';

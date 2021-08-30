@@ -1,6 +1,6 @@
 import 'package:browserr/domain/model/bookmark.dart';
 import 'package:browserr/domain/utils/localization.dart';
-import 'package:browserr/presentation/bloc/bookmarksbloc.dart';
+import 'package:browserr/presentation/bloc/bookmarks_bloc.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:flutter/material.dart';
 

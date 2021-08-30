@@ -37,7 +37,9 @@ class MyLocalizations {
       'webprefs': "Web settings",
       'cache': "Browser cache",
       'clear': "Clear",
-      'about': "About application"
+      'about': "About application",
+      'search': "Search",
+      'finish': "Finish"
     },
     'ru': {
       'history': "История",
@@ -66,7 +68,9 @@ class MyLocalizations {
       'webprefs': "Веб настройки",
       'cache': "Кэш браузера",
       'clear': "Очистить",
-      'about': "О приложении"
+      'about': "О приложении",
+      'search': "Поиск",
+      'finish': "Закончить"
     },
     'be': {
       'history': "Гісторыя",
@@ -96,7 +100,9 @@ class MyLocalizations {
       'webprefs': "Веб налады",
       'cache': "Кэш браўзэра",
       'clear': "Ачысціць",
-      'about': "Аб прыладзе"
+      'about': "Аб прыладзе",
+      'search': "Пошук",
+      'finish': "Закончыць"
     }
   };
 

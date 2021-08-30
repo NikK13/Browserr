@@ -7,11 +7,19 @@ class CacheBloc implements Bloc{
   final _clearedCacheSize = 32223;
 
   Stream<int> get cacheStream => _cacheSize.stream;
-  Function(int) get refreshCache => _cacheSize.sink.add;
+  Function(int) get setCache => _cacheSize.sink.add;
+
+  CacheBloc(WebViewController controller){
+    initializeCache(controller);
+  }
+
+  Future initializeCache(WebViewController controller) async{
+    setCache(await controller.getCacheSize());
+  }
 
   Future clearCache(WebViewController controller) async{
     await controller.clearCache();
-    refreshCache(_clearedCacheSize);
+    setCache(_clearedCacheSize);
   }
 
   @override

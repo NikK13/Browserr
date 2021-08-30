@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:browserr/domain/utils/app.dart';
 import 'package:browserr/domain/utils/localization.dart';
-import 'package:browserr/presentation/bloc/cachebloc.dart';
+import 'package:browserr/presentation/bloc/bloc_provider.dart';
+import 'package:browserr/presentation/bloc/cache_bloc.dart';
 import 'package:browserr/presentation/libs/settings_row.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:browserr/presentation/provider/preferenceprovider.dart';
@@ -10,41 +11,39 @@ import 'package:provider/provider.dart';
 
 class SettingsPage extends StatelessWidget{
   final WebViewController? controller;
-  final CacheBloc? cacheBloc;
-  final int? bytesOfCache;
 
-  const SettingsPage({
+  SettingsPage({
     this.controller,
-    this.cacheBloc,
-    this.bytesOfCache,
   });
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<PreferenceProvider>(context);
+    final _cacheBloc = CacheBloc(controller!);
+    final _provider = Provider.of<PreferenceProvider>(context);
     App.setupBar(Theme.of(context).brightness == Brightness.light);
-    print("Settings rebuild");
     return Scaffold(
-        body: SafeArea(
+      body: SafeArea(
+        child: BlocProvider(
+          bloc: _cacheBloc,
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      vertical: 10
+                    vertical: 10
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                          onPressed: (){
-                            Navigator.pop(context);
-                          },
-                          icon: Icon(
-                            Icons.arrow_back,
-                            color: Theme.of(context).textTheme.bodyText1!.color,
-                          )
+                        onPressed: (){
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(
+                          Icons.arrow_back,
+                          color: Theme.of(context).textTheme.bodyText1!.color,
+                        )
                       ),
                       Text(
                         MyLocalizations.of(context, 'settings'),
@@ -64,7 +63,7 @@ class SettingsPage extends StatelessWidget{
                 ),
                 SettingsRow(
                   title: MyLocalizations.of(context, 'changelang'),
-                  onTap: () => showLangDialog(context, provider),
+                  onTap: () => showLangDialog(context, _provider),
                   trailing: getTitle(context),
                   icon: Icons.language_rounded,
                 ),
@@ -87,8 +86,8 @@ class SettingsPage extends StatelessWidget{
                 ),
                 SettingsRow(
                   title: MyLocalizations.of(context, 'currenttheme'),
-                  onTap: () => showThemesDialog(context, provider),
-                  trailing: provider.getThemeTitle(context),
+                  onTap: () => showThemesDialog(context, _provider),
+                  trailing: _provider.getThemeTitle(context),
                   icon: Icons.brightness_auto,
                 ),
                 const SizedBox(height: 24),
@@ -96,15 +95,14 @@ class SettingsPage extends StatelessWidget{
                   title: MyLocalizations.of(context, 'webprefs'),
                 ),
                 StreamBuilder(
-                  stream: cacheBloc!.cacheStream,
+                  stream: _cacheBloc.cacheStream,
                   builder: (context, AsyncSnapshot<int> snapshot){
                     int bytes = snapshot.data ?? 0;
                     print("Stream re-run $bytes");
                     return SettingsRow(
                       title: MyLocalizations.of(context, 'cache'),
                       onTap: () async {
-                        await cacheBloc!.clearCache(controller!);
-                        //await cacheBloc!.refreshCache(await controller!.getCacheSize());
+                        await _cacheBloc.clearCache(controller!);
                       },
                       trailing: bytesIntoFormat(bytes),
                       icon: Icons.analytics_outlined,
@@ -115,6 +113,7 @@ class SettingsPage extends StatelessWidget{
             ),
           ),
         )
+      )
     );
   }
 

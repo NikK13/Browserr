@@ -3,10 +3,8 @@ import 'package:browserr/domain/utils/app.dart';
 import 'package:browserr/domain/utils/appnavigator.dart';
 import 'package:browserr/domain/utils/custompage.dart';
 import 'package:browserr/domain/utils/localization.dart';
-import 'package:browserr/presentation/bloc/bloc_provider.dart';
-import 'package:browserr/presentation/bloc/bookmarksbloc.dart';
-import 'package:browserr/presentation/bloc/cachebloc.dart';
-import 'package:browserr/presentation/bloc/historybloc.dart';
+import 'package:browserr/presentation/bloc/bookmarks_bloc.dart';
+import 'package:browserr/presentation/bloc/history_bloc.dart';
 import 'package:browserr/presentation/libs/searchdialog.dart';
 import 'package:browserr/presentation/libs/webview.dart';
 import 'package:browserr/presentation/ui/bookmarks.dart';
@@ -20,7 +18,6 @@ import 'bottomwebbar.dart';
 
 class SlideMenu extends StatefulWidget {
   final String? initialUrl;
-  final int? androidV;
   final HistoryBloc? bloc;
   final BookmarksBloc? bmBloc;
   final WebViewController? controller;
@@ -29,7 +26,6 @@ class SlideMenu extends StatefulWidget {
   const SlideMenu({
     @required this.scrollController,
     @required this.controller,
-    @required this.androidV,
     @required this.initialUrl,
     @required this.bmBloc,
     @required this.bloc,
@@ -41,10 +37,9 @@ class SlideMenu extends StatefulWidget {
 
 class _SlideMenuState extends State<SlideMenu> {
   late WebViewController? _controller;
-  final cacheBloc = CacheBloc();
 
-  bool isDesktop = false;
-  bool isForceDark = false;
+  bool _isDesktop = false;
+  bool _isForceDark = false;
 
   @override
   void initState() {
@@ -69,18 +64,6 @@ class _SlideMenuState extends State<SlideMenu> {
         controller: widget.scrollController,
         shrinkWrap: true,
         children: [
-          /*SizedBox(height: 16),
-          Align(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              width: 28,
-              height: 4,
-            ),
-            alignment: Alignment.center,
-          ),*/
           SizedBox(height: 8),
           BottomWebBar(
             bloc: widget.bmBloc,
@@ -95,50 +78,59 @@ class _SlideMenuState extends State<SlideMenu> {
               await _controller!.goForward();
             },
             onHomeTap: () async {
+              print("Home tap from slide: ${_controller!.img}");
               await _controller!.loadUrl(widget.initialUrl!);
             },
             reloadPage: () async => await _controller!.reload(),
           ),
           SizedBox(height: 16),
-          if(widget.androidV! >= 29 && widget.androidV != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-            ),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 8,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          MyLocalizations.of(context, 'darkweb'),
-                          style: TextStyle(
-                            fontSize: 18
+          FutureBuilder(
+            future: _controller!.getAndroidVersion(),
+            builder: (context, AsyncSnapshot<int> snapshot){
+              final version = snapshot.data ?? 0;
+              if(version >= 29){
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                  ),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 8,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                MyLocalizations.of(context, 'darkweb'),
+                                style: TextStyle(
+                                  fontSize: 18
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                    Switch(
-                      activeColor: App.appColor,
-                      value: isForceDark,
-                      onChanged: (bool value) {
-                        setState(() {
-                          isForceDark = value;
-                        });
-                        _controller!.forceDarkEnabled(value);
-                      }
+                          Switch(
+                            activeColor: App.appColor,
+                            value: _isForceDark,
+                            onChanged: (bool value) {
+                              setState(() {
+                                _isForceDark = value;
+                              });
+                              _controller!.forceDarkEnabled(value);
+                            }
+                          )
+                        ],
+                      ),
                     )
-                  ],
-                ),
-              )
-            ),
+                  ),
+                );
+              }
+              else return SizedBox();
+            },
           ),
           const SizedBox(
             height: 4,
@@ -169,10 +161,10 @@ class _SlideMenuState extends State<SlideMenu> {
                     ),
                     Switch(
                       activeColor: App.appColor,
-                      value: isDesktop,
+                      value: _isDesktop,
                       onChanged: (bool value) {
                         setState(() {
-                          isDesktop = value;
+                          _isDesktop = value;
                         });
                         _controller!.setDesktopMode(value);
                       }
@@ -274,26 +266,19 @@ class _SlideMenuState extends State<SlideMenu> {
                         await _controller!.viewSourceCode(prefs.getString("lastURL")!);
                       },
                     ),
-                    BlocProvider<CacheBloc>(
-                      bloc: cacheBloc,
-                      child: ItemsInRow(
-                        icon: Icons.settings,
-                        title: MyLocalizations.of(context, 'settings'),
-                        countRow: 3,
-                        onTap: () async{
-                          final bytes = await _controller!.getCacheSize();
-                          await cacheBloc.refreshCache(bytes);
-                          AppNavigator.of(context).push(
-                            CustomPage(
-                              child: SettingsPage(
-                                cacheBloc: cacheBloc,
-                                controller: _controller,
-                                bytesOfCache: bytes,
-                              )
+                    ItemsInRow(
+                      icon: Icons.settings,
+                      title: MyLocalizations.of(context, 'settings'),
+                      countRow: 3,
+                      onTap: () async{
+                        AppNavigator.of(context).push(
+                          CustomPage(
+                            child: SettingsPage(
+                              controller: _controller,
                             )
-                          );
-                        },
-                      ),
+                          )
+                        );
+                      },
                     ),
                     ItemsInRow(
                       icon: Icons.share,
